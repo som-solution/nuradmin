@@ -41,21 +41,21 @@ export default function AdminLogin() {
             <p className="mt-2 text-xs text-emerald-200/80">Or: superadmin2@nurpay.local / admin123</p>
           </div>
         <form onSubmit={handleSubmit} className="space-y-5">
-          {error && (
+          {error ? (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               <p className="font-medium">{error}</p>
-              {!error.includes('Cannot reach the backend') && (
+              {!error.includes('Cannot reach the backend') ? (
                 <div className="mt-2 space-y-1.5 text-red-200/90 text-xs">
-                <p className="font-medium">To fix:</p>
-                <ol className="list-decimal list-inside space-y-1">
-                  <li><strong>Backend on 8080</strong> — Open <code className="rounded bg-red-900/50 px-1">http://localhost:8080/actuator/health</code>. If you get JSON (e.g. <code className="rounded bg-red-900/50 px-1">{'{"status":"UP"}'}</code>), the backend is running. If it fails, start the backend (e.g. <code className="rounded bg-red-900/50 px-1">./mvnw spring-boot:run</code>) and wait until it’s up.</li>
+                  <p className="font-medium">To fix:</p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li><strong>Backend on 8080</strong> — Open <code className="rounded bg-red-900/50 px-1">http://localhost:8080/actuator/health</code>. If you get JSON (e.g. <code className="rounded bg-red-900/50 px-1">{'{"status":"UP"}'}</code>), the backend is running. If it fails, start the backend (e.g. <code className="rounded bg-red-900/50 px-1">./mvnw spring-boot:run</code>) and wait until it’s up.</li>
                   <li><strong>Admin accounts exist (seed ran)</strong> — Seed runs only when the profile is not production and the <code className="rounded bg-red-900/50 px-1">admins</code> table is empty at startup. Option A: stop backend, run <code className="rounded bg-red-900/50 px-1">DELETE FROM admins;</code> in Postgres, then start the backend again (no production profile). Option B: run <code className="rounded bg-red-900/50 px-1">SELECT id, email, enabled FROM admins;</code> and use one of those exact emails with the password you know (e.g. admin123).</li>
                   <li><strong>Exact credentials</strong> — Email: <code className="rounded bg-red-900/50 px-1">admin@nurpay.local</code> or <code className="rounded bg-red-900/50 px-1">superadmin2@nurpay.local</code> (lowercase, no spaces). Password: <code className="rounded bg-red-900/50 px-1">admin123</code> unless you changed it. Request must be POST with JSON body (this form does that).</li>
                 </ol>
-              </div>
-              )}
+                </div>
+              ) : null}
             </div>
-          )}
+          ) : null}
           <div>
             <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-zinc-300">Email</label>
             <input

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
-import { adminApi, canReconciliation, getAdminErrorMessage, type ApiError } from '../../lib/adminApi';
+import { adminApi, canReconciliation, getAdminErrorMessage } from '../../lib/adminApi';
 
 export default function AdminReconciliation() {
   const { admin } = useAdminAuth();

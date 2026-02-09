@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { adminApi, getAdminErrorMessage, type ApiError, type Dispute, type SpringPage } from '../../lib/adminApi';
+import { adminApi, getAdminErrorMessage, type Dispute, type SpringPage } from '../../lib/adminApi';
 
 const RESOLUTION_OPTIONS = [
   'RESOLVED_REFUND',

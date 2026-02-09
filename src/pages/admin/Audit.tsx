@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { adminApi, getAdminErrorMessage, type ApiError, type AuditLog, type SpringPage } from '../../lib/adminApi';
+import { adminApi, getAdminErrorMessage, type AuditLog, type SpringPage } from '../../lib/adminApi';
 
 export default function AdminAudit() {
   const [page, setPage] = useState<SpringPage<AuditLog> | null>(null);

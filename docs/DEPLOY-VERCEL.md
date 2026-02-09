@@ -54,3 +54,20 @@ See [PRODUCTION-CORS-RAILWAY.md](PRODUCTION-CORS-RAILWAY.md) for more CORS examp
 - Open **https://your-admin-app.vercel.app** (your actual Vercel URL).
 - Log in with an admin account. The app will call `https://nurpay-production.up.railway.app/api/admin/*`.
 - If you see “Cannot reach the backend” or CORS errors, confirm `NURPAY_SECURITY_CORS_ALLOWED_ORIGINS` on Railway includes `https://your-admin-app.vercel.app` and redeploy the backend.
+
+---
+
+## 5. Troubleshooting: DEPLOYMENT_NOT_FOUND (404)
+
+**Error:** `DEPLOYMENT_NOT_FOUND` or "Not Found" (404) when opening your Vercel URL.
+
+**Cause:** You're requesting a **deployment** that Vercel doesn't have. This is a **platform** error, not an app code bug. Common cases:
+
+| Situation | What to do |
+|-----------|------------|
+| **Wrong or old URL** | Use the **production** URL from the Vercel project dashboard (e.g. `https://nuradmin.vercel.app`). Don't use an old preview/PR URL. |
+| **Preview deployment deleted** | Preview deployments are removed after some time. Use the **production** URL, or push a new commit to trigger a new preview. |
+| **No successful deploy yet** | If the first deploy failed, there is no deployment. Fix build errors in the Vercel build logs, then **Redeploy** from the dashboard. |
+| **Deployment was deleted** | In Vercel: **Deployments** → trigger **Redeploy** on the latest, or push a new commit to `main`. |
+
+**Correct URL:** Use the **production domain** from your Vercel project (e.g. `https://nuradmin.vercel.app`). Bookmark it; avoid one-off preview URLs for daily use.

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
-import { adminApi, canProviderToggle, getAdminErrorMessage, type ApiError } from '../../lib/adminApi';
+import { adminApi, canProviderToggle, getAdminErrorMessage } from '../../lib/adminApi';
 
 export default function AdminProvider() {
   const { admin } = useAdminAuth();

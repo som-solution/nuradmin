@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { adminApi, getAdminErrorMessage, type ApiError, type OutboxEvent, type SpringPage } from '../../lib/adminApi';
+import { adminApi, getAdminErrorMessage, type OutboxEvent, type SpringPage } from '../../lib/adminApi';
 
 export default function AdminOutbox() {
   const [page, setPage] = useState<SpringPage<OutboxEvent> | { content: OutboxEvent[] } | null>(null);

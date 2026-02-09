@@ -5,7 +5,6 @@ import {
   canKycDocuments,
   getAdminErrorMessage,
   type AdminDocument,
-  type ApiError,
   type SpringPage,
   type DocumentViewResponse,
 } from '../../lib/adminApi';

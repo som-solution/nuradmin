@@ -6,7 +6,6 @@ import {
   canRetryPayout,
   getAdminErrorMessage,
   type AdminTransaction,
-  type ApiError,
   type SpringPage,
 } from '../../lib/adminApi';
 

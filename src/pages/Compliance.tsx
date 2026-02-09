@@ -38,10 +38,10 @@ export default function Compliance() {
     try {
       const [profileRes, docsRes] = await Promise.all([
         api.get<ComplianceProfile>('/compliance/profile').catch(() => ({})),
-        api.get<ComplianceDocumentsResponse>('/compliance/documents').catch(() => ({ documents: [], kycTier: 'NONE' })),
+        api.get<ComplianceDocumentsResponse>('/compliance/documents').catch(() => ({ documents: [], kycTier: 'NONE' as const })),
       ]);
       setProfile(profileRes || {});
-      setDocuments(docsRes || { documents: [], kycTier: 'NONE' });
+      setDocuments(docsRes || { documents: [], kycTier: 'NONE' as const });
     } catch (err) {
       setError((err as ApiError).message ?? 'Failed to load');
     } finally {
