@@ -57,7 +57,7 @@ export function getAdminErrorMessage(err: unknown, fallback: string): string {
     return `Cannot reach the backend (${base}). Check: (1) Backend is running — open ${base}/actuator/health in a new tab. (2) If using a remote API from localhost, the server must allow CORS for http://localhost:3000. Check the browser Network tab for blocked requests.`;
   }
   // Check status first so 403 always gets a helpful message (backend often returns body "Forbidden")
-  if (apiErr?.status === 401) return 'Invalid credentials: the backend could not find that email in admins or the password did not match.';
+  if (apiErr?.status === 401) return 'Invalid credentials: the backend could not find that email in admins or the password did not match. On production, ensure the backend has at least one admin in the admins table (seed may not run in production).';
   if (apiErr?.status === 403) return 'You don’t have permission for this page. Only certain roles can access it (e.g. Admins is SUPER_ADMIN only). Log in with admin@nurpay.local or superadmin2@nurpay.local (password admin123) for full access, or use the sidebar to open only the links you can access.';
   if (apiErr?.status === 405) return "Admin login requires POST, not GET. Use the Sign in button; do not open the API URL in the browser.";
   if (apiErr?.status === 429) return 'Too many login attempts. Wait about a minute, or reset the limit in Redis (nurpay:ratelimit:login:<email>).';
