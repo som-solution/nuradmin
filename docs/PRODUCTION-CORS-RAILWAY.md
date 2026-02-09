@@ -100,3 +100,4 @@ After changing the variable on Railway, redeploy or restart the backend so the n
 
 - **Backend up:** Open `https://nurpay-production.up.railway.app/actuator/health` in a new tab; you should see JSON (e.g. `{"status":"UP"}`).
 - **CORS:** If that works but the app still shows "Failed to fetch", the browser is blocking the request due to CORS — add your frontend origin to `NURPAY_SECURITY_CORS_ALLOWED_ORIGINS` on the backend (Railway).
+- **Wrong URL or 404:** See [TROUBLESHOOT-BACKEND-URLS.md](TROUBLESHOOT-BACKEND-URLS.md) — check which URL is called in Network tab and compare with the real API paths.

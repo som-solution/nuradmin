@@ -36,13 +36,14 @@ export default function AdminLogin() {
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">NurPay Admin</h1>
             <p className="mt-1.5 text-sm text-zinc-500">Sign in with your staff account</p>
           </div>
+          <p className="mb-4 text-xs text-zinc-400">Sign in using the form below. Do not open the login API URL in the browser — that sends GET and returns 405.</p>
           <div className="mb-6 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-4">
             <p className="text-sm font-medium text-emerald-200">Default credentials (backend seed)</p>
             <p className="mt-2 font-mono text-sm text-emerald-100">admin@nurpay.local</p>
             <p className="font-mono text-sm text-emerald-100">admin123</p>
             <p className="mt-2 text-xs text-emerald-200/80">Or: superadmin2@nurpay.local / admin123</p>
           </div>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" method="post" action="#">
           {error ? (
             <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               <p className="font-medium">{error}</p>
@@ -50,6 +51,9 @@ export default function AdminLogin() {
                 <div className="mt-2 space-y-1.5 text-red-200/90 text-xs">
                   <p className="font-medium">To fix:</p>
                   <ol className="list-decimal list-inside space-y-1">
+                    {error.includes('POST') && error.includes('GET') ? (
+                      <li><strong>Use this page only</strong> — Enter email and password above and click <strong>Sign in</strong>. Do not open or bookmark <code className="rounded bg-red-900/50 px-1">{API_BASE}/api/admin/auth/login</code> in the browser (that sends GET and returns 405).</li>
+                    ) : null}
                     <li><strong>Backend running</strong> — Open <code className="rounded bg-red-900/50 px-1">{API_BASE}/actuator/health</code>. If you get JSON (e.g. <code className="rounded bg-red-900/50 px-1">{'{"status":"UP"}'}</code>), the backend is up. If using localhost, start the backend (e.g. <code className="rounded bg-red-900/50 px-1">./mvnw spring-boot:run</code>). If using production, check Railway.</li>
                   <li><strong>Admin accounts exist (seed ran)</strong> — Seed runs only when the profile is not production and the <code className="rounded bg-red-900/50 px-1">admins</code> table is empty at startup. Option A: stop backend, run <code className="rounded bg-red-900/50 px-1">DELETE FROM admins;</code> in Postgres, then start the backend again (no production profile). Option B: run <code className="rounded bg-red-900/50 px-1">SELECT id, email, enabled FROM admins;</code> and use one of those exact emails with the password you know (e.g. admin123).</li>
                   <li><strong>Exact credentials</strong> — Email: <code className="rounded bg-red-900/50 px-1">admin@nurpay.local</code> or <code className="rounded bg-red-900/50 px-1">superadmin2@nurpay.local</code> (lowercase, no spaces). Password: <code className="rounded bg-red-900/50 px-1">admin123</code> unless you changed it. Request must be POST with JSON body (this form does that).</li>
