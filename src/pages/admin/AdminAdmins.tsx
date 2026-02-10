@@ -4,6 +4,7 @@ import {
   adminApi,
   canAdminManagement,
   getAdminErrorMessage,
+  normalizeSpringPage,
   type AdminEntity,
   type ApiError,
   type CreateAdminBody,
@@ -33,10 +34,10 @@ export default function AdminAdmins() {
     setLoading(true);
     setError(null);
     try {
-      const data = await adminApi.get<SpringPage<AdminEntity>>(
+      const raw = await adminApi.get<unknown>(
         `/admins?page=${pageNum}&size=${pageSize}&sort=createdAt,desc`
       );
-      setPage(data);
+      setPage(normalizeSpringPage<AdminEntity>(raw));
     } catch (err) {
       setError(getAdminErrorMessage(err, 'Failed to load admins'));
     } finally {

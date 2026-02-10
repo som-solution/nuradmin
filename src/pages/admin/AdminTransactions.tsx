@@ -5,6 +5,7 @@ import {
   canRefundCancel,
   canRetryPayout,
   getAdminErrorMessage,
+  normalizeSpringPage,
   type AdminTransaction,
   type SpringPage,
 } from '../../lib/adminApi';
@@ -41,8 +42,8 @@ export default function AdminTransactions() {
     try {
       let path = `/transactions?page=${pageNum}&size=${pageSize}&sort=createdAt,desc`;
       if (statusFilter) path += `&status=${encodeURIComponent(statusFilter)}`;
-      const data = await adminApi.get<SpringPage<AdminTransaction>>(path);
-      setPage(data);
+      const raw = await adminApi.get<unknown>(path);
+      setPage(normalizeSpringPage<AdminTransaction>(raw));
     } catch (err) {
       setError(getAdminErrorMessage(err, 'Failed to load'));
     } finally {
@@ -104,6 +105,8 @@ export default function AdminTransactions() {
                     <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">ID</th>
                     <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Status</th>
                     <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Amount</th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Receive</th>
+                    <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Failure</th>
                     <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-zinc-400">Created</th>
                     {(canRefundCancelRole || canRetryRole) && (
                       <th className="px-4 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-zinc-400">Actions</th>
@@ -121,6 +124,14 @@ export default function AdminTransactions() {
                       </td>
                       <td className="px-4 py-3.5 font-medium text-white">
                         {t.amount != null ? `${t.amount} ${t.currency ?? ''}` : '—'}
+                      </td>
+                      <td className="px-4 py-3.5 text-sm text-zinc-400">
+                        {t.receiveAmount != null && t.receiveCurrency
+                          ? `${t.receiveAmount} ${t.receiveCurrency}`
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-3.5 text-sm text-zinc-500 max-w-[160px] truncate" title={t.failureReason ?? ''}>
+                        {t.failureReason ?? '—'}
                       </td>
                       <td className="px-4 py-3.5 text-sm text-zinc-500">
                         {t.createdAt ? new Date(t.createdAt).toLocaleString() : '—'}

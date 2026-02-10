@@ -19,7 +19,7 @@ export default function AdminLogin() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate('/admin');
+      navigate('/');
     } catch (err) {
       setError(getAdminErrorMessage(err, 'Invalid credentials'));
     } finally {

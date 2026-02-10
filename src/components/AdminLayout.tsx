@@ -19,21 +19,21 @@ export default function AdminLayout() {
   const role = admin?.adminType ?? 'SUPPORT';
 
   const nav: { to: string; label: string; show: boolean }[] = [
-    { to: '/admin', label: 'Dashboard', show: true },
-    { to: '/admin/admins', label: 'Admins', show: canAdminManagement(role) },
-    { to: '/admin/users', label: 'Users', show: true },
-    { to: '/admin/transactions', label: 'Transactions', show: true },
-    { to: '/admin/audit', label: 'Audit', show: canAudit(role) },
-    { to: '/admin/reconciliation', label: 'Reconciliation', show: canReconciliation(role) },
-    { to: '/admin/provider', label: 'Provider', show: canProviderToggle(role) },
-    { to: '/admin/outbox', label: 'Outbox', show: canOutbox(role) },
-    { to: '/admin/disputes', label: 'Disputes', show: canDisputes(role) },
-    { to: '/admin/documents', label: 'KYC documents', show: canKycDocuments(role) },
+    { to: '/', label: 'Dashboard', show: true },
+    { to: '/admins', label: 'Admins', show: canAdminManagement(role) },
+    { to: '/users', label: 'Users', show: true },
+    { to: '/transactions', label: 'Transactions', show: true },
+    { to: '/audit', label: 'Audit', show: canAudit(role) },
+    { to: '/reconciliation', label: 'Reconciliation', show: canReconciliation(role) },
+    { to: '/provider', label: 'Provider', show: canProviderToggle(role) },
+    { to: '/outbox', label: 'Outbox', show: canOutbox(role) },
+    { to: '/disputes', label: 'Disputes', show: canDisputes(role) },
+    { to: '/documents', label: 'KYC documents', show: canKycDocuments(role) },
   ];
 
   const handleLogout = () => {
     logout();
-    navigate('/admin/login');
+    navigate('/login');
     setMobileMenuOpen(false);
   };
 
@@ -43,7 +43,7 @@ export default function AdminLayout() {
     <div className="min-h-screen bg-zinc-950 text-zinc-200">
       {/* Mobile header */}
       <header className="fixed top-0 left-0 right-0 z-40 flex h-14 items-center justify-between border-b border-zinc-800/80 bg-zinc-900/95 px-4 backdrop-blur-sm lg:hidden">
-        <Link to="/admin" className="text-lg font-semibold tracking-tight text-emerald-400">
+        <Link to="/" className="text-lg font-semibold tracking-tight text-emerald-400">
           NurPay Admin
         </Link>
         <button
@@ -107,7 +107,7 @@ export default function AdminLayout() {
       {/* Desktop sidebar */}
       <aside className="fixed top-0 left-0 z-20 hidden h-full w-64 border-r border-zinc-800 bg-zinc-900/98 lg:block">
         <div className="flex h-14 items-center border-b border-zinc-800 px-4">
-          <Link to="/admin" className="text-lg font-semibold tracking-tight text-emerald-400">
+          <Link to="/" className="text-lg font-semibold tracking-tight text-emerald-400">
             NurPay Admin
           </Link>
         </div>

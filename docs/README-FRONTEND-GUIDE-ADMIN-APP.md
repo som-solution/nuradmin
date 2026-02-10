@@ -1,9 +1,27 @@
-# NurPay Admin API – Full Reference
+# NurPay – Full Frontend Guide (Admin Web App)
 
-This document describes the **admin-only** API: base URL, authentication, RBAC, and every admin endpoint with request/response shapes.
+This document is the **single reference** for building the **admin web application** (browser) used by staff. It includes: **what the backend provides**, **what changed** to follow the backend, **RBAC**, and **every admin endpoint** with request/response shapes.
 
 **Base path:** `/api/admin/**`  
 **Authentication:** Admin JWT only. User tokens are not accepted for admin endpoints.
+
+---
+
+## Backend status and what changed (follow this)
+
+The backend is **finished** for the admin app. Below is what you must follow.
+
+| Area | Backend behaviour | What the frontend must do |
+|------|-------------------|---------------------------|
+| **Login** | **POST /api/admin/auth/login** only. No registration. Seed admins (non-production): `admin@nurpay.local`, `superadmin2@nurpay.local` / `admin123`. | Use **admin** JWT for all `/api/admin/**` requests. Never call user login. Show/hide actions by **adminType** (see RBAC). |
+| **Transactions** | List supports optional **status** filter. Each transaction may include **receiveAmount**, **receiveCurrency** (e.g. KES), **failureReason**, **b2cConversationId** (for M-Pesa B2C callbacks). Payout is **triggered automatically** after Stripe webhook (stub or Safaricom). | List transactions; filter by status (e.g. `PAYOUT_FAILED` for retry queue). **Retry payout** (SUPER_ADMIN, ADMIN, OPS): **POST /api/admin/transactions/{id}/retry**. Refund/Cancel: SUPER_ADMIN, ADMIN only. |
+| **Transaction statuses** | `PAYMENT_RECEIVED`, `PAYOUT_INITIATED`, `PAYOUT_SUCCESS`, `PAYOUT_FAILED`, `REFUNDED`, `CANCELLED`, etc. | Use for filters and labels. For `PAYOUT_FAILED`, show retry button (if role allows). |
+| **Users** | List, freeze, enable. Freeze/enable require SUPER_ADMIN, ADMIN, or OPS. | List users; show freeze/enable actions per RBAC. |
+| **KYC documents** | SUPER_ADMIN and ADMIN only: list, view (presigned URL), approve, reject. View is audit-logged. | Review queue: **GET /api/admin/documents?status=PENDING**. View document → open presigned URL. Approve/Reject with optional reason. |
+| **Audit** | All sensitive actions (refund, cancel, document view/approve/reject, admin update) are logged. | **GET /api/admin/audit** and **GET /api/admin/audit/entity?entityType=...&entityId=...** for traceability. |
+| **Provider** | **PUT /api/admin/provider/{providerCode}?enabled=true|false** – toggle payout provider (e.g. Safaricom). SUPER_ADMIN, ADMIN, OPS. | Optional: settings page to enable/disable provider. |
+
+**Other docs:** [RBAC-ENDPOINT-MAPPING.md](RBAC-ENDPOINT-MAPPING.md) (which role can call which endpoint), [HOW-NURPAY-WORKS.md](HOW-NURPAY-WORKS.md) (overview).
 
 ---
 
@@ -15,7 +33,7 @@ This API is for the **admin web application** (browser), used by **staff only** 
 |--|----------------|---------------------|
 | **Platform** | Web (browser) | Flutter (mobile) |
 | **Users** | Staff (admins) | Customers (send money) |
-| **Login** | **POST /api/admin/auth/login** | POST /api/auth/login (see [README-FRONTEND-API.md](README-FRONTEND-API.md)) |
+| **Login** | **POST /api/admin/auth/login** | POST /api/auth/login (see [README-FRONTEND-GUIDE-USER-APP.md](README-FRONTEND-GUIDE-USER-APP.md)) |
 | **Registration** | **None** – admins are created by the backend (seed) or by SUPER_ADMIN | Users register via POST /api/auth/register |
 | **Token** | Admin JWT → use only for `/api/admin/**` | User JWT → use only for `/api/auth/*`, `/api/recipients`, `/api/send/*`, etc. |
 
@@ -180,7 +198,7 @@ Only **SUPER_ADMIN** can list admins and update an admin's email or password. Us
 - **GET** `/api/admin/transactions?page=0&size=20&status=PAYMENT_RECEIVED`
 - **Query:** `status` (optional) – one of: `CREATED`, `PAYMENT_PENDING`, `PAYMENT_RECEIVED`, `PAYOUT_INITIATED`, `PAYOUT_SUCCESS`, `FINALIZED`, `PAYMENT_FAILED`, `PAYOUT_FAILED`, `REFUNDED`, `CANCELLED`, `COMPENSATION`.
 - **Auth:** Any admin.
-- **Success (200):** Spring `Page<Transaction>` (id, userId, recipientId, amount, fee, currency, status, idempotencyKey, payoutProviderRef, createdAt, etc.).
+- **Success (200):** Spring `Page<Transaction>`. Each transaction includes: id, userId, recipientId, amount, fee, currency, status, idempotencyKey, payoutProviderRef, **receiveAmount**, **receiveCurrency**, **failureReason**, **b2cConversationId** (for M-Pesa B2C), createdAt, updatedAt.
 
 ### Refund transaction
 
@@ -322,6 +340,26 @@ User-uploaded KYC documents (passport, driving licence, payslip, bank statement)
 
 ---
 
+## Screens and flows to build (admin web app)
+
+Use the APIs above to build these. Exact layout is up to you. **Show or hide actions based on adminType** (see RBAC).
+
+| Screen / flow | Purpose | APIs and roles |
+|---------------|---------|----------------|
+| **Login** | Admin signs in | **POST /api/admin/auth/login** – body: `email`, `password`. Store `accessToken`, `refreshToken`, `adminType`. |
+| **Dashboard** | Overview | **GET /api/admin/users?page=0&size=20**, **GET /api/admin/transactions?page=0&size=20** (optional filters). |
+| **Users list** | List and manage users | **GET /api/admin/users**. **PUT .../freeze**, **PUT .../enable** (SUPER_ADMIN, ADMIN, OPS). |
+| **Transactions list** | List and filter transactions | **GET /api/admin/transactions?status=...**. Show status, amount, receiveAmount/receiveCurrency, failureReason. **Retry:** **POST /api/admin/transactions/{id}/retry** (SUPER_ADMIN, ADMIN, OPS). **Refund:** **POST .../refund** (SUPER_ADMIN, ADMIN). **Cancel:** **POST .../cancel** (SUPER_ADMIN, ADMIN). |
+| **Audit logs** | View audit trail | **GET /api/admin/audit**. **GET /api/admin/audit/entity?entityType=User&entityId=uuid** for one entity. |
+| **KYC documents** | Review queue (SUPER_ADMIN, ADMIN) | **GET /api/admin/documents?status=PENDING**. **GET /api/admin/users/{userId}/documents**. **GET /api/admin/documents/{id}/view** (presigned URL). **POST .../approve**, **POST .../reject?reason=...**. |
+| **Admins** (SUPER_ADMIN only) | Create/list/update admins | **POST /api/admin/admins**, **GET /api/admin/admins**, **PUT /api/admin/admins/{id}**. |
+| **Reconciliation** | Run reconciliation (SUPER_ADMIN, ADMIN) | **POST /api/admin/reconciliation/run**. |
+| **Provider** | Toggle payout provider (SUPER_ADMIN, ADMIN, OPS) | **PUT /api/admin/provider/{providerCode}?enabled=true\|false**. |
+| **Outbox** | Pending events (SUPER_ADMIN, ADMIN, OPS) | **GET /api/admin/outbox**, **POST /api/admin/outbox/{eventId}/process**. |
+| **Disputes** | List and resolve (SUPER_ADMIN, ADMIN, OPS) | **GET /api/admin/disputes**, **POST /api/admin/disputes/{id}/resolve?resolution=...**. |
+
+---
+
 ## Error responses
 
 Admin endpoints use the same error shape as the rest of the API where applicable:
@@ -378,4 +416,4 @@ HTTP status: 400, 401, 403, 404, 409, 429, 500.
 3. **SUPPORT** is read-only: users and transactions list, audit. No state or fund changes.
 4. **CORS:** If the admin UI runs on a different origin, configure CORS for the admin base URL (e.g. in `application.yml` or a `WebMvcConfigurer`).
 
-For full RBAC and frontend UI rules, see [RBAC-ENDPOINT-MAPPING.md](./RBAC-ENDPOINT-MAPPING.md).
+For full RBAC and frontend UI rules, see [RBAC-ENDPOINT-MAPPING.md](RBAC-ENDPOINT-MAPPING.md).

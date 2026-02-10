@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { adminApi, getAdminErrorMessage, type OutboxEvent, type SpringPage } from '../../lib/adminApi';
+import { adminApi, getAdminErrorMessage, normalizeSpringPage, type OutboxEvent, type SpringPage } from '../../lib/adminApi';
 
 export default function AdminOutbox() {
-  const [page, setPage] = useState<SpringPage<OutboxEvent> | { content: OutboxEvent[] } | null>(null);
+  const [page, setPage] = useState<SpringPage<OutboxEvent> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageNum, setPageNum] = useState(0);
@@ -12,14 +12,8 @@ export default function AdminOutbox() {
     setLoading(true);
     setError(null);
     try {
-      const data = await adminApi.get<SpringPage<OutboxEvent> | OutboxEvent[]>(
-        `/outbox?page=${pageNum}&size=${pageSize}`
-      );
-      if (Array.isArray(data)) {
-        setPage({ content: data, totalPages: 1, totalElements: data.length, size: pageSize, number: 0 });
-      } else {
-        setPage(data as SpringPage<OutboxEvent>);
-      }
+      const raw = await adminApi.get<unknown>(`/outbox?page=${pageNum}&size=${pageSize}`);
+      setPage(normalizeSpringPage<OutboxEvent>(raw));
     } catch (err) {
       setError(getAdminErrorMessage(err, 'Failed to load outbox'));
     } finally {
@@ -41,8 +35,8 @@ export default function AdminOutbox() {
     }
   };
 
-  const list = page && 'content' in page ? page.content : [];
-  const totalPages = page && 'totalPages' in page ? page.totalPages : 1;
+  const list = page?.content ?? [];
+  const totalPages = page?.totalPages ?? 1;
 
   return (
     <div>

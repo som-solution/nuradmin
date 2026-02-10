@@ -15,12 +15,14 @@ export interface ApiError {
   status?: number;
 }
 
+const ADMIN_REFRESH_KEY = 'adminRefreshToken';
+
 /** Admin JWT only. Must be the accessToken from POST /api/admin/auth/login — never use the user token (accessToken from /api/auth/login). */
 function getAdminToken(): string | null {
   return localStorage.getItem('adminAccessToken');
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
   const token = getAdminToken();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -34,6 +36,29 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     cache: 'no-store', // always get fresh data (e.g. new app users in admin list)
   });
   const data = await res.json().catch(() => ({}));
+
+  // On 401, try refresh once and retry (except for the refresh endpoint itself)
+  if (res.status === 401 && !retried && path !== '/auth/refresh') {
+    const refresh = localStorage.getItem(ADMIN_REFRESH_KEY);
+    if (refresh) {
+      try {
+        const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: refresh }),
+          cache: 'no-store',
+        });
+        const refreshData = await refreshRes.json().catch(() => ({}));
+        if (refreshRes.ok && refreshData.accessToken) {
+          localStorage.setItem('adminAccessToken', refreshData.accessToken);
+          if (refreshData.refreshToken) localStorage.setItem(ADMIN_REFRESH_KEY, refreshData.refreshToken);
+          return request<T>(path, options, true);
+        }
+      } catch {
+        // fall through to throw original 401
+      }
+    }
+  }
 
   if (!res.ok) {
     const err: ApiError = {
@@ -152,6 +177,10 @@ export interface AdminTransaction {
   status?: string;
   idempotencyKey?: string;
   payoutProviderRef?: string;
+  receiveAmount?: number | string;
+  receiveCurrency?: string;
+  failureReason?: string;
+  b2cConversationId?: string;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: unknown;

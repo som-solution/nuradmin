@@ -4,8 +4,8 @@ import {
   adminApi,
   canKycDocuments,
   getAdminErrorMessage,
+  normalizeSpringPage,
   type AdminDocument,
-  type SpringPage,
   type DocumentViewResponse,
 } from '../../lib/adminApi';
 
@@ -24,11 +24,11 @@ export default function AdminDocuments() {
     setLoading(true);
     setError(null);
     try {
-      const data = await adminApi.get<SpringPage<AdminDocument> | AdminDocument[]>(
+      const raw = await adminApi.get<unknown>(
         `/documents?status=${statusFilter}&page=0&size=20`
       );
-      const list = Array.isArray(data) ? data : (data as SpringPage<AdminDocument>).content ?? [];
-      setDocuments(list);
+      const page = normalizeSpringPage<AdminDocument>(raw);
+      setDocuments(page.content);
     } catch (err) {
       setError(getAdminErrorMessage(err, 'Failed to load documents'));
     } finally {
@@ -45,11 +45,11 @@ export default function AdminDocuments() {
     setLoadingUser(true);
     setError(null);
     try {
-      const data = await adminApi.get<SpringPage<AdminDocument> | AdminDocument[]>(
+      const raw = await adminApi.get<unknown>(
         `/users/${userIdFilter.trim()}/documents?page=0&size=20`
       );
-      const list = Array.isArray(data) ? data : (data as SpringPage<AdminDocument>).content ?? [];
-      setUserDocs(list);
+      const page = normalizeSpringPage<AdminDocument>(raw);
+      setUserDocs(page.content);
     } catch (err) {
       setError(getAdminErrorMessage(err, 'Failed to load user documents'));
       setUserDocs([]);

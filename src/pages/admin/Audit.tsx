@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { adminApi, getAdminErrorMessage, type AuditLog, type SpringPage } from '../../lib/adminApi';
+import { adminApi, getAdminErrorMessage, normalizeSpringPage, type AuditLog, type SpringPage } from '../../lib/adminApi';
 
 export default function AdminAudit() {
   const [page, setPage] = useState<SpringPage<AuditLog> | null>(null);
@@ -16,15 +16,15 @@ export default function AdminAudit() {
     setError(null);
     try {
       if (useEntityFilter) {
-        const data = await adminApi.get<SpringPage<AuditLog>>(
+        const raw = await adminApi.get<unknown>(
           `/audit/entity?entityType=${encodeURIComponent(entityType)}&entityId=${encodeURIComponent(entityId)}&page=${pageNum}&size=${pageSize}&sort=createdAt,desc`
         );
-        setPage(data);
+        setPage(normalizeSpringPage<AuditLog>(raw));
       } else {
-        const data = await adminApi.get<SpringPage<AuditLog>>(
+        const raw = await adminApi.get<unknown>(
           `/audit?page=${pageNum}&size=${pageSize}&sort=createdAt,desc`
         );
-        setPage(data);
+        setPage(normalizeSpringPage<AuditLog>(raw));
       }
     } catch (err) {
       setError(getAdminErrorMessage(err, 'Failed to load audit'));

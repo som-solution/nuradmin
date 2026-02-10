@@ -18,15 +18,15 @@ export default function AdminDashboard() {
   const role = admin?.adminType ?? 'SUPPORT';
 
   const links = [
-    { to: '/admin/admins', label: 'Admins', show: canAdminManagement(role), desc: 'Manage admin accounts' },
-    { to: '/admin/users', label: 'Users', show: true, desc: 'List and manage users' },
-    { to: '/admin/transactions', label: 'Transactions', show: true, desc: 'View and act on transfers' },
-    { to: '/admin/audit', label: 'Audit logs', show: canAudit(role), desc: 'Activity and audit trail' },
-    { to: '/admin/reconciliation', label: 'Reconciliation', show: canReconciliation(role), desc: 'Run reconciliation' },
-    { to: '/admin/provider', label: 'Provider', show: canProviderToggle(role), desc: 'Toggle payout provider' },
-    { to: '/admin/outbox', label: 'Outbox', show: canOutbox(role), desc: 'Pending outbox events' },
-    { to: '/admin/disputes', label: 'Disputes', show: canDisputes(role), desc: 'List and resolve disputes' },
-    { to: '/admin/documents', label: 'KYC documents', show: canKycDocuments(role), desc: 'Review and approve docs' },
+    { to: '/admins', label: 'Admins', show: canAdminManagement(role), desc: 'Manage admin accounts' },
+    { to: '/users', label: 'Users', show: true, desc: 'List and manage users' },
+    { to: '/transactions', label: 'Transactions', show: true, desc: 'View and act on transfers' },
+    { to: '/audit', label: 'Audit logs', show: canAudit(role), desc: 'Activity and audit trail' },
+    { to: '/reconciliation', label: 'Reconciliation', show: canReconciliation(role), desc: 'Run reconciliation' },
+    { to: '/provider', label: 'Provider', show: canProviderToggle(role), desc: 'Toggle payout provider' },
+    { to: '/outbox', label: 'Outbox', show: canOutbox(role), desc: 'Pending outbox events' },
+    { to: '/disputes', label: 'Disputes', show: canDisputes(role), desc: 'List and resolve disputes' },
+    { to: '/documents', label: 'KYC documents', show: canKycDocuments(role), desc: 'Review and approve docs' },
   ].filter((l) => l.show);
 
   return (
@@ -52,9 +52,6 @@ export default function AdminDashboard() {
           </Link>
         ))}
       </div>
-      <p className="mt-8 text-sm text-zinc-500">
-        <a href="/" className="text-emerald-400 hover:text-emerald-300 hover:underline">Back to user app</a>
-      </p>
     </div>
   );
 }

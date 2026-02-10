@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { adminApi, getAdminErrorMessage, type Dispute, type SpringPage } from '../../lib/adminApi';
+import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { adminApi, canDisputes, getAdminErrorMessage, normalizeSpringPage, type Dispute, type SpringPage } from '../../lib/adminApi';
 
 const RESOLUTION_OPTIONS = [
   'RESOLVED_REFUND',
@@ -9,12 +10,14 @@ const RESOLUTION_OPTIONS = [
 ] as const;
 
 export default function AdminDisputes() {
+  const { admin } = useAdminAuth();
   const [page, setPage] = useState<SpringPage<Dispute> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageNum, setPageNum] = useState(0);
   const [statusFilter, setStatusFilter] = useState('');
   const pageSize = 20;
+  const canAccess = admin?.adminType ? canDisputes(admin.adminType) : false;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -22,8 +25,8 @@ export default function AdminDisputes() {
     try {
       let path = `/disputes?page=${pageNum}&size=${pageSize}`;
       if (statusFilter) path += `&status=${encodeURIComponent(statusFilter)}`;
-      const data = await adminApi.get<SpringPage<Dispute>>(path);
-      setPage(data);
+      const raw = await adminApi.get<unknown>(path);
+      setPage(normalizeSpringPage<Dispute>(raw));
     } catch (err) {
       setError(getAdminErrorMessage(err, 'Failed to load disputes'));
     } finally {
@@ -32,8 +35,9 @@ export default function AdminDisputes() {
   }, [pageNum, statusFilter]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (canAccess) load();
+    else setLoading(false);
+  }, [load, canAccess]);
 
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolution, setResolution] = useState<string>(RESOLUTION_OPTIONS[0]);
@@ -57,6 +61,15 @@ export default function AdminDisputes() {
 
   const list = page?.content ?? [];
   const totalPages = page?.totalPages ?? 0;
+
+  if (!canAccess) {
+    return (
+      <div>
+        <h1 className="mb-2 text-2xl font-bold tracking-tight text-white">Disputes</h1>
+        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-200">Only SUPER_ADMIN, ADMIN, and OPS can list and resolve disputes. SUPPORT is read-only and cannot access this section.</p>
+      </div>
+    );
+  }
 
   return (
     <div>

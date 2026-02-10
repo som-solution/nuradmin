@@ -53,16 +53,24 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [applyLoginResponse]);
 
+  // On mount: restore session from stored token (refresh) or clear and stop loading
+  /* eslint-disable react-hooks/set-state-in-effect -- session restore: setState in async callback is intentional */
   useEffect(() => {
     const token = localStorage.getItem(ADMIN_TOKEN_KEY);
     if (!token) {
-      setAdmin(null);
-      setLoading(false);
+      queueMicrotask(() => {
+        setAdmin(null);
+        setLoading(false);
+      });
       return;
     }
-    // We don't have a "me" endpoint for admin; trust stored token and try refresh to get adminId/adminType
-    refreshToken().finally(() => setLoading(false));
+    let cancelled = false;
+    refreshToken()
+      .then(() => { if (!cancelled) setLoading(false); })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [refreshToken]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -88,6 +96,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* eslint-disable-next-line react-refresh/only-export-components -- hook must be next to provider for context */
 export function useAdminAuth() {
   const ctx = useContext(AdminAuthContext);
   if (!ctx) throw new Error('useAdminAuth must be used within AdminAuthProvider');
