@@ -84,7 +84,8 @@ React + TypeScript + Vite + Tailwind CSS **admin web app** for the NurPay backen
 
 ## Documentation
 
-- **[docs/README-ADMIN-API.md](docs/README-ADMIN-API.md)** – Full admin API (endpoints, RBAC, request/response).
+- **[docs/README-ADMIN-APP-FULL.md](docs/README-ADMIN-APP-FULL.md)** – **Single reference** for the admin frontend team: backend status, all endpoints (users, transactions, audit, KYC, exchange rates, fee config, countries, provider, outbox, disputes), RBAC, screens to build, checklist.
+- **[docs/README-ADMIN-API.md](docs/README-ADMIN-API.md)** – Admin API (endpoints, RBAC, request/response).
 - **[docs/README-FRONTEND-GUIDE-ADMIN-APP.md](docs/README-FRONTEND-GUIDE-ADMIN-APP.md)** – Frontend guide (screens, flows).
 - **[docs/FRONTEND-FLOW-CHECKLIST.md](docs/FRONTEND-FLOW-CHECKLIST.md)** – Flow checklist (admin section).
 - **[docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md)** – Deploy to Vercel.
