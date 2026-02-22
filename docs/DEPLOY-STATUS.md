@@ -31,10 +31,27 @@ Use this checklist to confirm the admin web app deployment is complete and worki
 
 ---
 
-## 4. Summary
+## 4. Admin endpoints: rates, fee-config, countries (404 on production)
+
+If **Exchange rates**, **Fee config**, or **Supported countries** in the admin app return **404**, the backend at `VITE_API_BASE_URL` is running an **older build** that doesn’t include these routes.
+
+| Backend route | Purpose |
+|---------------|--------|
+| GET/PUT `/api/admin/rates` | Exchange rates (e.g. 1 GBP = X KES) |
+| GET/PUT `/api/admin/fee-config` | Fee percent, min, max per send currency |
+| GET/POST `/api/admin/countries`, PUT `/api/admin/countries/{countryCode}` | Supported receive countries |
+
+**What to do:** Redeploy the **NurPay backend** (the API repo, not this admin repo) from the latest code so production serves these endpoints. After deploy, Liquibase will run new migrations and the admin app’s calls will work.
+
+**In this admin app:** When the backend returns 404 for these endpoints, the UI shows: *“Rates, fee config, and countries are not available on this backend yet. Redeploy the NurPay backend to the latest version to enable these features.”* so the rest of the app still works.
+
+---
+
+## 5. Summary
 
 - **Frontend deploy:** Complete (Vercel, https://nuradmin.vercel.app).
 - **Backend:** Separate service (e.g. Railway). Not part of this repo.
 - **To finish:** Set `VITE_API_BASE_URL` on Vercel and allow `https://nuradmin.vercel.app` in backend CORS, then redeploy if needed.
+- **404 on rates/fee-config/countries:** Redeploy the NurPay backend to the latest version (see section 4 above).
 
 Full deploy steps: [DEPLOY-VERCEL.md](DEPLOY-VERCEL.md).

@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import {
   adminApi,
+  BACKEND_SETTINGS_404_MESSAGE,
   canRatesFeeCountries,
   getAdminErrorMessage,
+  type ApiError,
   type FeeConfig as FeeConfigType,
 } from '../../lib/adminApi';
 
@@ -29,7 +31,7 @@ export default function FeeConfig() {
       const arr = Array.isArray(raw) ? raw : (raw as { content?: FeeConfigType[] }).content ?? [];
       setList(arr);
     } catch (err) {
-      setError(getAdminErrorMessage(err, 'Failed to load fee config'));
+      setError((err as ApiError)?.status === 404 ? BACKEND_SETTINGS_404_MESSAGE : getAdminErrorMessage(err, 'Failed to load fee config'));
     } finally {
       setLoading(false);
     }
@@ -61,7 +63,7 @@ export default function FeeConfig() {
       setSuccess('Fee config saved for ' + send);
       load();
     } catch (err) {
-      setError(getAdminErrorMessage(err, 'Failed to save fee config'));
+      setError((err as ApiError)?.status === 404 ? BACKEND_SETTINGS_404_MESSAGE : getAdminErrorMessage(err, 'Failed to save fee config'));
     } finally {
       setSaving(false);
     }

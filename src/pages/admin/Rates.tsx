@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import {
   adminApi,
+  BACKEND_SETTINGS_404_MESSAGE,
   canRatesFeeCountries,
   getAdminErrorMessage,
+  type ApiError,
   type ExchangeRate,
 } from '../../lib/adminApi';
 
@@ -27,7 +29,7 @@ export default function Rates() {
       const arr = Array.isArray(raw) ? raw : (raw as { content?: ExchangeRate[] }).content ?? [];
       setList(arr);
     } catch (err) {
-      setError(getAdminErrorMessage(err, 'Failed to load rates'));
+      setError((err as ApiError)?.status === 404 ? BACKEND_SETTINGS_404_MESSAGE : getAdminErrorMessage(err, 'Failed to load rates'));
     } finally {
       setLoading(false);
     }
@@ -55,7 +57,7 @@ export default function Rates() {
       setSuccess('Rate saved: 1 ' + send + ' = ' + rateVal + ' ' + receive);
       load();
     } catch (err) {
-      setError(getAdminErrorMessage(err, 'Failed to save rate'));
+      setError((err as ApiError)?.status === 404 ? BACKEND_SETTINGS_404_MESSAGE : getAdminErrorMessage(err, 'Failed to save rate'));
     } finally {
       setSaving(false);
     }

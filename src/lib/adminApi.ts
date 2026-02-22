@@ -96,6 +96,10 @@ export function getAdminErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+/** Message to show when GET /api/admin/rates, fee-config, or countries returns 404 (deployed backend is an older build). */
+export const BACKEND_SETTINGS_404_MESSAGE =
+  'Rates, fee config, and countries are not available on this backend yet. Redeploy the NurPay backend to the latest version to enable these features.';
+
 export const adminApi = {
   get: <T>(path: string) => request<T>(path, { method: 'GET' }),
   /** POST with JSON body. Admin login is POST /api/admin/auth/login with { email, password } — do not use GET (e.g. opening the URL in browser). */

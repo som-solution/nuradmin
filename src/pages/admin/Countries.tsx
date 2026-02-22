@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import {
   adminApi,
+  BACKEND_SETTINGS_404_MESSAGE,
   canRatesFeeCountries,
   getAdminErrorMessage,
+  type ApiError,
   type SupportedCountry,
 } from '../../lib/adminApi';
 
@@ -33,7 +35,7 @@ export default function Countries() {
       const arr = Array.isArray(raw) ? raw : (raw as { content?: SupportedCountry[] }).content ?? [];
       setList(arr);
     } catch (err) {
-      setError(getAdminErrorMessage(err, 'Failed to load countries'));
+      setError((err as ApiError)?.status === 404 ? BACKEND_SETTINGS_404_MESSAGE : getAdminErrorMessage(err, 'Failed to load countries'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ export default function Countries() {
       setDisplayOrder('4');
       load();
     } catch (err) {
-      setError(getAdminErrorMessage(err, 'Failed to add country'));
+      setError((err as ApiError)?.status === 404 ? BACKEND_SETTINGS_404_MESSAGE : getAdminErrorMessage(err, 'Failed to add country'));
     } finally {
       setSaving(false);
     }
@@ -89,7 +91,7 @@ export default function Countries() {
       setEditingCode(null);
       load();
     } catch (err) {
-      setError(getAdminErrorMessage(err, 'Failed to update country'));
+      setError((err as ApiError)?.status === 404 ? BACKEND_SETTINGS_404_MESSAGE : getAdminErrorMessage(err, 'Failed to update country'));
     }
   };
 
