@@ -25,6 +25,9 @@ React + TypeScript + Vite + Tailwind CSS **admin web app** for the NurPay backen
 | `/outbox` | Pending outbox events; process (SUPER_ADMIN, ADMIN, OPS) |
 | `/disputes` | List and resolve disputes (SUPER_ADMIN, ADMIN, OPS) |
 | `/documents` | KYC documents – list, view, approve, reject (SUPER_ADMIN, ADMIN only) |
+| `/rates` | Exchange rates – list, create/update (SUPER_ADMIN, ADMIN only) |
+| `/fee-config` | Fee config – list, create/update (SUPER_ADMIN, ADMIN only) |
+| `/countries` | Supported countries – list, add, update (SUPER_ADMIN, ADMIN only) |
 | `/admins` | List admins; create/update (SUPER_ADMIN only) |
 
 ---

@@ -8,6 +8,7 @@ import {
   canKycDocuments,
   canOutbox,
   canProviderToggle,
+  canRatesFeeCountries,
   canReconciliation,
 } from '../lib/adminApi';
 
@@ -29,6 +30,9 @@ export default function AdminLayout() {
     { to: '/outbox', label: 'Outbox', show: canOutbox(role) },
     { to: '/disputes', label: 'Disputes', show: canDisputes(role) },
     { to: '/documents', label: 'KYC documents', show: canKycDocuments(role) },
+    { to: '/rates', label: 'Exchange rates', show: canRatesFeeCountries(role) },
+    { to: '/fee-config', label: 'Fee config', show: canRatesFeeCountries(role) },
+    { to: '/countries', label: 'Countries', show: canRatesFeeCountries(role) },
   ];
 
   const handleLogout = () => {

@@ -13,6 +13,9 @@ import Provider from './pages/admin/Provider';
 import Outbox from './pages/admin/Outbox';
 import Disputes from './pages/admin/Disputes';
 import Documents from './pages/admin/Documents';
+import Rates from './pages/admin/Rates';
+import FeeConfig from './pages/admin/FeeConfig';
+import Countries from './pages/admin/Countries';
 
 function ProtectedAdminRoute({ children }: { children: React.ReactNode }) {
   const { admin, loading } = useAdminAuth();
@@ -52,6 +55,9 @@ function AppRoutes() {
         <Route path="outbox" element={<Outbox />} />
         <Route path="disputes" element={<Disputes />} />
         <Route path="documents" element={<Documents />} />
+        <Route path="rates" element={<Rates />} />
+        <Route path="fee-config" element={<FeeConfig />} />
+        <Route path="countries" element={<Countries />} />
       </Route>
 
       <Route path="/admin" element={<Navigate to="/" replace />} />

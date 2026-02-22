@@ -268,6 +268,11 @@ export function canAdminManagement(adminType: AdminType): boolean {
   return adminType === 'SUPER_ADMIN';
 }
 
+/** SUPER_ADMIN, ADMIN: exchange rates, fee config, supported countries */
+export function canRatesFeeCountries(adminType: AdminType): boolean {
+  return ['SUPER_ADMIN', 'ADMIN'].includes(adminType);
+}
+
 /** Admin entity (from GET /api/admin/admins) */
 export interface AdminEntity {
   id: string;
@@ -327,4 +332,41 @@ export interface AdminDocument {
 export interface DocumentViewResponse {
   viewUrl: string;
   expiresMinutes?: number;
+}
+
+// Exchange rates (GET/PUT /api/admin/rates) – SUPER_ADMIN, ADMIN
+export interface ExchangeRate {
+  id?: string;
+  sendCurrency: string;
+  receiveCurrency: string;
+  rate: number | string;
+  updatedByAdminId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Fee config (GET/PUT /api/admin/fee-config) – SUPER_ADMIN, ADMIN
+export interface FeeConfig {
+  id?: string;
+  sendCurrency: string;
+  feePercent: number;
+  feeMinAmount: number;
+  feeMaxAmount: number;
+  feeCurrency: string;
+  updatedByAdminId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Supported countries (GET/POST/PUT /api/admin/countries) – SUPER_ADMIN, ADMIN
+export interface SupportedCountry {
+  id?: string;
+  countryCode: string;
+  name: string;
+  currencyCode: string;
+  dialCode: string;
+  phoneLength: number;
+  enabled?: boolean;
+  displayOrder?: number;
+  [key: string]: unknown;
 }
