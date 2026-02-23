@@ -1,29 +1,54 @@
 # NurPay – Full Admin App README (handoff to admin frontend team)
 
-**All backend updates are ready.** This is the **single reference** for building the **admin web application** (browser) used by staff. It includes RBAC, every admin endpoint (users, transactions, audit, KYC, **exchange rates**, **fee config**, **supported countries**, provider, outbox, disputes), and screens to build.
+**Single reference** for building the **admin web application** (browser) used by staff. Includes RBAC, every admin endpoint (users, transactions, audit, KYC, exchange rates, fee config, supported countries, provider, outbox, disputes), request/response shapes, and screens to build.
 
 **Base path:** `/api/admin/**`  
-**Authentication:** Admin JWT only. User tokens are not accepted. Do not call user login or user APIs from the admin app.
+**Authentication:** Admin JWT only. User tokens are rejected on admin endpoints. The admin app must **only** use **POST /api/admin/auth/login**; never call user auth.
+
+**User (customer) app:** Auth is **phone + OTP only** (POST /api/auth/send-otp, POST /api/auth/verify-otp). **POST /api/auth/register** and **POST /api/auth/login** are disabled (410 Gone). Admins do not use these.
 
 ---
 
-## Backend status and what changed (follow this)
+## Contents
 
-The backend is **finished** for the admin app. Below is what you must follow.
+1. [Backend status and what you must follow](#backend-status-and-what-you-must-follow)
+2. [Who uses this API](#who-uses-this-api--admin-web-app-only)
+3. [Base URL & headers](#base-url--headers)
+4. [Admin auth](#admin-auth-no-token-for-loginrefresh)
+5. [RBAC](#rbac-who-can-call-what)
+6. [User management](#user-management)
+7. [Admin management](#admin-management-super_admin-only)
+8. [Transactions](#transactions)
+9. [Audit logs](#audit-logs)
+10. [KYC documents](#kyc-documents-super_admin-admin-only)
+11. [Reconciliation & provider](#reconciliation--provider)
+12. [Exchange rates and fee config](#exchange-rates-and-fee-config-super_admin-admin-only)
+13. [Supported receive countries](#supported-receive-countries-super_admin-admin-only)
+14. [Outbox](#outbox-event-processing)
+15. [Disputes](#disputes)
+16. [Screens and flows to build](#screens-and-flows-to-build-admin-web-app)
+17. [Error responses](#error-responses)
+18. [Quick reference: all admin endpoints](#quick-reference-all-admin-endpoints)
+19. [Checklist](#checklist-for-the-admin-app)
+20. [Security notes](#security-notes)
+
+---
+
+## Backend status and what you must follow
 
 | Area | Backend behaviour | What the frontend must do |
 |------|-------------------|---------------------------|
-| **Login** | **POST /api/admin/auth/login** only. No registration. Seed admins (non-production): `admin@nurpay.local`, `superadmin2@nurpay.local` / `admin123`. | Use **admin** JWT for all `/api/admin/**` requests. Never call user login. Show/hide actions by **adminType** (see RBAC). |
-| **Transactions** | List supports optional **status** filter. Each transaction may include **receiveAmount**, **receiveCurrency** (e.g. KES), **failureReason**, **b2cConversationId** (for M-Pesa B2C callbacks). Payout is **triggered automatically** after Stripe webhook (stub or Safaricom). | List transactions; filter by status (e.g. `PAYOUT_FAILED` for retry queue). **Retry payout** (SUPER_ADMIN, ADMIN, OPS): **POST /api/admin/transactions/{id}/retry**. Refund/Cancel: SUPER_ADMIN, ADMIN only. |
+| **Login** | **POST /api/admin/auth/login** only. No registration. Seed admins (non-production): `admin@nurpay.local`, `superadmin2@nurpay.local` / `admin123`. | Use **admin** JWT for all `/api/admin/**` requests. Never call user auth. Show/hide actions by **adminType** (see RBAC). |
+| **Transactions** | List supports optional **status** filter. Each transaction may include **receiveAmount**, **receiveCurrency** (e.g. KES), **failureReason**, **b2cConversationId** (for M-Pesa B2C). Payout is triggered automatically after Stripe webhook (stub or Safaricom). | List transactions; filter by status (e.g. `PAYOUT_FAILED` for retry queue). **Retry payout** (SUPER_ADMIN, ADMIN, OPS): **POST /api/admin/transactions/{id}/retry**. Refund/Cancel: SUPER_ADMIN, ADMIN only. |
 | **Transaction statuses** | `PAYMENT_RECEIVED`, `PAYOUT_INITIATED`, `PAYOUT_SUCCESS`, `PAYOUT_FAILED`, `REFUNDED`, `CANCELLED`, etc. | Use for filters and labels. For `PAYOUT_FAILED`, show retry button (if role allows). |
-| **Users** | List, freeze, enable. Freeze/enable require SUPER_ADMIN, ADMIN, or OPS. | List users; show freeze/enable actions per RBAC. |
-| **KYC documents** | SUPER_ADMIN and ADMIN only: list, view (presigned URL), approve, reject. View is audit-logged. | Review queue: **GET /api/admin/documents?status=PENDING**. View document → open presigned URL. Approve/Reject with optional reason. |
+| **Users** | List, freeze, enable. User list may include `phoneNormalized`, `onboardingStep` (PROFILE_REQUIRED, KYC_REQUIRED, READY). Freeze/enable require SUPER_ADMIN, ADMIN, or OPS. | List users; show freeze/enable actions per RBAC. |
+| **KYC documents** | SUPER_ADMIN and ADMIN only: list, view (presigned URL), approve, reject. Approving ID doc sets user to ID_VERIFIED; approving SOF doc sets SOF_VERIFIED; when KYC complete backend sets user **onboardingStep** to READY. View is audit-logged. | Review queue: **GET /api/admin/documents?status=PENDING**. View document → open presigned URL. Approve/Reject with optional reason. |
 | **Audit** | All sensitive actions (refund, cancel, document view/approve/reject, admin update) are logged. | **GET /api/admin/audit** and **GET /api/admin/audit/entity?entityType=...&entityId=...** for traceability. |
 | **Provider** | **PUT /api/admin/provider/{providerCode}?enabled=true\|false** – toggle payout provider (e.g. Safaricom). SUPER_ADMIN, ADMIN, OPS. | Optional: settings page to enable/disable provider. |
 | **Exchange rates & fees** | **GET/PUT /api/admin/rates** and **GET/PUT /api/admin/fee-config** – manage quote rate (e.g. 1 GBP = 163 KES) and fee (%, min, max). SUPER_ADMIN, ADMIN. | Settings: list rates, edit rate per currency pair; list fee config, edit fee percent/min/max per send currency. |
-| **Supported countries** | **GET /api/admin/countries**, **POST /api/admin/countries**, **PUT /api/admin/countries/{countryCode}** – add or edit receive countries (e.g. Somalia). Users can only send to countries in this list. SUPER_ADMIN, ADMIN. | To add Somalia: POST a new country (SO, Somalia, SOS, 252, 9), then **PUT /api/admin/rates** with receiveCurrency=SOS and a rate. App lists countries via **GET /api/send/countries** (no auth). |
+| **Supported countries** | **GET /api/admin/countries**, **POST /api/admin/countries**, **PUT /api/admin/countries/{countryCode}** – add or edit receive countries (e.g. Somalia). Users can only send to countries in this list. SUPER_ADMIN, ADMIN. | To add Somalia: POST a new country (SO, Somalia, SOS, 252, 9), then **PUT /api/admin/rates** with receiveCurrency=SOS and a rate. User app lists countries via **GET /api/send/countries** (no auth). |
 
-**Other docs:** [RBAC-ENDPOINT-MAPPING.md](RBAC-ENDPOINT-MAPPING.md) (which role can call which endpoint), [HOW-NURPAY-WORKS.md](HOW-NURPAY-WORKS.md) (overview).
+**Other docs:** [RBAC-ENDPOINT-MAPPING.md](RBAC-ENDPOINT-MAPPING.md) (which role can call which endpoint).
 
 ---
 
@@ -35,11 +60,11 @@ This API is for the **admin web application** (browser), used by **staff only** 
 |--|----------------|---------------------|
 | **Platform** | Web (browser) | Flutter (mobile) |
 | **Users** | Staff (admins) | Customers (send money) |
-| **Login** | **POST /api/admin/auth/login** | POST /api/auth/login (see [README-FRONTEND-API.md](README-FRONTEND-API.md)) |
-| **Registration** | **None** – admins are created by the backend (seed) or by SUPER_ADMIN | Users register via POST /api/auth/register |
-| **Token** | Admin JWT → use only for `/api/admin/**` | User JWT → use only for `/api/auth/*`, `/api/recipients`, `/api/send/*`, etc. |
+| **Login** | **POST /api/admin/auth/login** (email + password) | **POST /api/auth/send-otp** then **POST /api/auth/verify-otp** (phone + OTP only) |
+| **Registration** | **None** – admins are created by the backend (seed) or by SUPER_ADMIN | **None** – users are created on first successful verify-otp (phone-only; register/login return 410 Gone) |
+| **Token** | Admin JWT → use only for `/api/admin/**` | User JWT → use only for `/api/auth/*`, `/api/recipients`, `/api/send/*`, `/api/compliance/*`, etc. |
 
-**Do not mix:** The admin web app must never call user login (`/api/auth/login`) or user register. The Flutter app must never call admin login (`/api/admin/auth/login`) or any `/api/admin/*` endpoint. Admin credentials (e.g. `admin@nurpay.local` / `admin123`) exist only in the `admins` table and work only with **POST /api/admin/auth/login**.
+**Do not mix:** The admin web app must never call user auth (`/api/auth/send-otp`, `/api/auth/verify-otp`, or any user endpoint). The Flutter app must never call admin login or any `/api/admin/*` endpoint. Admin credentials (e.g. `admin@nurpay.local` / `admin123`) exist only in the `admins` table and work only with **POST /api/admin/auth/login**.
 
 ### Who can log in to the admin web app?
 
@@ -59,6 +84,19 @@ This API is for the **admin web application** (browser), used by **staff only** 
   Authorization: Bearer <adminAccessToken>
   ```
   Use the `accessToken` from **POST /api/admin/auth/login**. Do **not** use user tokens here.
+
+**Quick test (curl) – default seed admin:**
+```bash
+# Login (non-production seed)
+curl -s -X POST http://localhost:8080/api/admin/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@nurpay.local","password":"admin123"}'
+# → accessToken, refreshToken, adminId, adminType
+
+# Then call any admin endpoint with the token
+curl -s -X GET "http://localhost:8080/api/admin/users?page=0&size=10" \
+  -H "Authorization: Bearer <accessToken>"
+```
 
 ---
 
@@ -96,7 +134,7 @@ This API is for the **admin web application** (browser), used by **staff only** 
 - **POST** `/api/admin/auth/refresh`
 - **Auth:** None (use refresh token in body).
 - **Body:** `{ "refreshToken": "string" }`
-- **Success (200):** Same shape as login (new `accessToken`, `refreshToken`, `adminId`, `adminType`).
+- **Success (200):** Same shape as login (new `accessToken`, `refreshToken`, `adminId`, `adminType`, `email`).
 - **Errors:** 400 `{ "error": "refreshToken required" }`, 401 `{ "error": "Invalid token" }` or `{ "error": "Admin not found or disabled" }`.
 
 ---
@@ -120,7 +158,7 @@ Sensitive actions (refund, cancel, reconciliation, **document view/approve/rejec
 
 - **GET** `/api/admin/users?page=0&size=20&sort=createdAt,desc`
 - **Auth:** Admin JWT (any admin type).
-- **Success (200):** Spring `Page<User>` (user entities; id, email, firstName, lastName, enabled, frozen, countryCode, userNumber, createdAt, etc.).
+- **Success (200):** Spring `Page<User>` (user entities; id, email, firstName, lastName, enabled, frozen, countryCode, userNumber, **phoneNormalized**, **onboardingStep** (PROFILE_REQUIRED, KYC_REQUIRED, READY), createdAt, etc.).
 
 ### Freeze user
 
@@ -157,7 +195,7 @@ Only **SUPER_ADMIN** can list admins and update an admin's email or password. Us
   ```
   **adminType** must be one of: `SUPER_ADMIN`, `ADMIN`, `OPS`, `SUPPORT`. Use `ADMIN`, `OPS`, or `SUPPORT` to create other roles.
 - **Success (201):** `{ "adminId": "uuid", "email": "ops@nurpay.local", "adminType": "ADMIN", "enabled": true }`
-- **Errors:** 409 `EMAIL_TAKEN` if email already in use; 400 if validation fails (e.g. password under 8 chars).
+- **Errors:** 409 `EMAIL_TAKEN` if email already in use; 400 if validation fails (e.g. password &lt; 8 chars).
 - **Audit:** Action `ADMIN_CREATED` is logged.
 
 ### List admins
@@ -238,7 +276,55 @@ Only **SUPER_ADMIN** can list admins and update an admin's email or password. Us
 - **GET** `/api/admin/audit/entity?entityType=User&entityId=uuid&page=0&size=20`
 - **Query:** `entityType` (required), `entityId` (required), plus page/sort.
 - **Auth:** Any admin.
-- **Success (200):** List of `AuditLog` for that entity.
+- **Success (200):** Spring `Page<AuditLog>` for that entity.
+
+---
+
+## KYC documents (SUPER_ADMIN, ADMIN only)
+
+User-uploaded KYC documents (passport, driving licence, payslip, bank statement) are stored in S3 and reviewed manually. Only **SUPER_ADMIN** and **ADMIN** can list, view, approve, or reject. Viewing a document generates a short-lived presigned URL and is audit-logged.
+
+### List documents
+
+- **GET** `/api/admin/documents?status=PENDING&page=0&size=20`
+- **Query:** `status` (optional) – `PENDING`, `APPROVED`, or `REJECTED`. Default listing is by status (e.g. use `status=PENDING` for review queue). Pagination: `page`, `size`, `sort`.
+- **Auth:** SUPER_ADMIN, ADMIN.
+- **Success (200):** Spring `Page<UserDocument>` (id, userId, documentType, fileName, status, uploadedAt, reviewedAt, rejectionReason; s3Bucket/s3Key are not returned).
+
+### List documents for a user
+
+- **GET** `/api/admin/users/{userId}/documents?page=0&size=20`
+- **Auth:** SUPER_ADMIN, ADMIN.
+- **Success (200):** Spring `Page<UserDocument>` for that user (same fields as above).
+
+### View document (presigned URL)
+
+- **GET** `/api/admin/documents/{id}/view`
+- **Auth:** SUPER_ADMIN, ADMIN.
+- **Success (200):**
+  ```json
+  {
+    "viewUrl": "https://...",
+    "expiresMinutes": 15
+  }
+  ```
+  Open `viewUrl` in a browser or iframe to display the file. The URL expires after 15 minutes. **Audit:** action `DOCUMENT_VIEWED` is logged with adminId, document id, and IP.
+
+### Approve document
+
+- **POST** `/api/admin/documents/{id}/approve`
+- **Auth:** SUPER_ADMIN, ADMIN.
+- **Success (200):** `{ "id": "uuid", "status": "APPROVED" }`
+- **Side effects:** If the document is an ID type (PASSPORT or DRIVING_LICENCE) and the user's tier is NONE, user is set to **ID_VERIFIED**. If the document is a source-of-funds type (PAYSLIP or BANK_STATEMENT), user is set to **SOF_VERIFIED** (higher send limits).
+- **Errors:** 400 if document is not PENDING (already reviewed).
+
+### Reject document
+
+- **POST** `/api/admin/documents/{id}/reject?reason=Optional+reason`
+- **Query:** `reason` (optional, max 512 chars) – shown to the user as rejection feedback.
+- **Auth:** SUPER_ADMIN, ADMIN.
+- **Success (200):** `{ "id": "uuid", "status": "REJECTED" }`
+- **Errors:** 400 if document is not PENDING.
 
 ---
 
@@ -356,7 +442,7 @@ Admins can **add a new country** (e.g. Somalia) so users can send money there. O
 
 - **GET** `/api/admin/outbox?page=0&size=20`
 - **Auth:** SUPER_ADMIN, ADMIN, OPS.
-- **Success (200):** List of `OutboxEvent` (pending events to be processed).
+- **Success (200):** Spring `Page<OutboxEvent>` (pending events to be processed).
 
 ### Process outbox event
 
@@ -382,54 +468,6 @@ Admins can **add a new country** (e.g. Somalia) so users can send money there. O
 - **Query:** `resolution` (required) – one of the `DisputeStatus` values; `notes` (optional).
 - **Auth:** SUPER_ADMIN, ADMIN, OPS.
 - **Success (200):** `{ "disputeId": "uuid", "status": "RESOLVED_REFUND" }`
-
----
-
-## KYC documents (SUPER_ADMIN, ADMIN only)
-
-User-uploaded KYC documents (passport, driving licence, payslip, bank statement) are stored in S3 and reviewed manually. Only **SUPER_ADMIN** and **ADMIN** can list, view, approve, or reject. Viewing a document generates a short-lived presigned URL and is audit-logged.
-
-### List documents
-
-- **GET** `/api/admin/documents?status=PENDING&page=0&size=20`
-- **Query:** `status` (optional) – `PENDING`, `APPROVED`, or `REJECTED`. Default listing is by status (e.g. use `status=PENDING` for review queue). Pagination: `page`, `size`, `sort`.
-- **Auth:** SUPER_ADMIN, ADMIN.
-- **Success (200):** Spring `Page<UserDocument>` (id, userId, documentType, fileName, status, uploadedAt, reviewedAt, rejectionReason; s3Bucket/s3Key are not returned).
-
-### List documents for a user
-
-- **GET** `/api/admin/users/{userId}/documents?page=0&size=20`
-- **Auth:** SUPER_ADMIN, ADMIN.
-- **Success (200):** Spring `Page<UserDocument>` for that user (same fields as above).
-
-### View document (presigned URL)
-
-- **GET** `/api/admin/documents/{id}/view`
-- **Auth:** SUPER_ADMIN, ADMIN.
-- **Success (200):**
-  ```json
-  {
-    "viewUrl": "https://...",
-    "expiresMinutes": 15
-  }
-  ```
-  Open `viewUrl` in a browser or iframe to display the file. The URL expires after 15 minutes. **Audit:** action `DOCUMENT_VIEWED` is logged with adminId, document id, and IP.
-
-### Approve document
-
-- **POST** `/api/admin/documents/{id}/approve`
-- **Auth:** SUPER_ADMIN, ADMIN.
-- **Success (200):** `{ "id": "uuid", "status": "APPROVED" }`
-- **Side effects:** If the document is an ID type (PASSPORT or DRIVING_LICENCE) and the user's tier is NONE, user is set to **ID_VERIFIED**. If the document is a source-of-funds type (PAYSLIP or BANK_STATEMENT), user is set to **SOF_VERIFIED** (higher send limits).
-- **Errors:** 400 if document is not PENDING (already reviewed).
-
-### Reject document
-
-- **POST** `/api/admin/documents/{id}/reject?reason=Optional+reason`
-- **Query:** `reason` (optional, max 512 chars) – shown to the user as rejection feedback.
-- **Auth:** SUPER_ADMIN, ADMIN.
-- **Success (200):** `{ "id": "uuid", "status": "REJECTED" }`
-- **Errors:** 400 if document is not PENDING.
 
 ---
 
@@ -514,8 +552,8 @@ HTTP status: 400, 401, 403, 404, 409, 429, 500.
 
 ## Checklist for the admin app
 
-- [ ] Login with **POST /api/admin/auth/login** only; never use user login. Store `accessToken`, `refreshToken`, `adminType`.
-- [ ] Send **`Authorization: Bearer <adminAccessToken>`** on every request to `/api/admin/**`. On 401, try **POST /api/admin/auth/refresh** with refreshToken.
+- [ ] Login with **POST /api/admin/auth/login** (email + password) only; never use user auth (send-otp/verify-otp). Store `accessToken`, `refreshToken`, `adminType`.
+- [ ] Send **Authorization: Bearer &lt;adminAccessToken&gt;** on every request to `/api/admin/**`. On 401, try **POST /api/admin/auth/refresh** with refreshToken.
 - [ ] Show/hide actions by **adminType**: SUPPORT = read-only (users, transactions, audit); OPS = + freeze/enable, retry, provider, outbox, disputes; ADMIN = + refund, cancel, reconciliation, KYC, rates, fee-config, countries; SUPER_ADMIN = + admin management (create/list/update admins).
 - [ ] **Exchange rates:** List with GET /api/admin/rates; create/update with PUT (body: sendCurrency, receiveCurrency, rate). Used by user app quote.
 - [ ] **Fee config:** List with GET /api/admin/fee-config; create/update with PUT (body: sendCurrency, feePercent, feeMinAmount, feeMaxAmount, feeCurrency).
@@ -526,7 +564,7 @@ HTTP status: 400, 401, 403, 404, 409, 429, 500.
 ## Security notes
 
 1. **Admin JWT** is separate from user JWT. Do not use user tokens for `/api/admin/**`.
-2. **Sensitive actions** (refund, cancel, reconciliation, freeze, **document view/approve/reject**, **admin update**) are logged in the audit log with adminId, adminType, reason, and IP.
+2. **Sensitive actions** (refund, cancel, reconciliation, freeze/enable user, **document view/approve/reject**, **admin update**) are logged in the audit log with adminId, adminType, reason, and IP.
 3. **SUPPORT** is read-only: users and transactions list, audit. No state or fund changes.
 4. **CORS:** If the admin UI runs on a different origin, configure CORS for the admin base URL (e.g. in `application.yml` or a `WebMvcConfigurer`).
 
